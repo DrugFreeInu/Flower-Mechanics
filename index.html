@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Cogflowers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0b0e14;
+    overflow: hidden;
+    touch-action: none;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+
+<body>
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const flowers = [];
+const FLOWER_COUNT = 7;
+
+class CogFlower {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.radius = 40 + Math.random() * 30;
+    this.teeth = 8 + Math.floor(Math.random() * 6);
+    this.petals = 6 + Math.floor(Math.random() * 6);
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = 0.001 + Math.random() * 0.002;
+    this.energy = 0;
+    this.hue = 200 + Math.random() * 80;
+  }
+
+  touch(tx, ty) {
+    const d = Math.hypot(tx - this.x, ty - this.y);
+    if (d < this.radius * 2) {
+      this.energy += 0.08;
+      this.hue += 8;
+    }
+  }
+
+  update() {
+    this.angle += this.speed + this.energy;
+    this.energy *= 0.92;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+
+    // petals
+    for (let i = 0; i < this.petals; i++) {
+      ctx.rotate((Math.PI * 2) / this.petals);
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${this.hue},70%,60%,0.35)`;
+      ctx.ellipse(this.radius * 1.4, 0, 14, 40, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // cog body
+    ctx.beginPath();
+    ctx.strokeStyle = `hsla(${this.hue},80%,70%,0.8)`;
+    ctx.lineWidth = 2;
+
+    for (let i = 0; i < this.teeth; i++) {
+      const a = (i / this.teeth) * Math.PI * 2;
+      const r = i % 2 === 0 ? this.radius : this.radius * 1.15;
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // center
+    ctx.beginPath();
+    ctx.fillStyle = "#0b0e14";
+    ctx.arc(0, 0, this.radius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// create flowers
+for (let i = 0; i < FLOWER_COUNT; i++) {
+  flowers.push(
+    new CogFlower(
+      Math.random() * W * 0.8 + W * 0.1,
+      Math.random() * H * 0.8 + H * 0.1
+    )
+  );
+}
+
+// touch / mouse
+function interact(x, y) {
+  flowers.forEach(f => f.touch(x, y));
+}
+
+canvas.addEventListener("pointerdown", e => {
+  interact(e.clientX, e.clientY);
+});
+
+canvas.addEventListener("pointermove", e => {
+  if (e.buttons) interact(e.clientX, e.clientY);
+});
+
+// loop
+function loop() {
+  ctx.fillStyle = "rgba(11,14,20,0.25)";
+  ctx.fillRect(0, 0, W, H);
+
+  flowers.forEach(f => {
+    f.update();
+    f.draw();
+  });
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
